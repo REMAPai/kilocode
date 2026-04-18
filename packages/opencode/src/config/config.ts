@@ -190,7 +190,17 @@ export namespace Config {
     if (!ignore) {
       await Filesystem.write(
         gitignore,
-        ["node_modules", "package.json", "package-lock.json", "bun.lock", ".gitignore"].join("\n"),
+        // kilocode_change start - added pnpm-lock.yaml and yarn.lock (not in upstream)
+        [
+          "node_modules",
+          "package.json",
+          "package-lock.json",
+          "pnpm-lock.yaml",
+          "bun.lock",
+          "yarn.lock",
+          ".gitignore",
+        ].join("\n"),
+        // kilocode_change end
       )
     }
     // kilocode_change start
@@ -1023,10 +1033,15 @@ export namespace Config {
         .boolean()
         .optional()
         .describe("@deprecated Use 'share' field instead. Share newly created sessions automatically"),
-      remote_control: z // kilocode_change
+      // kilocode_change start
+      // NOTE: Any new kilocode_change key added to Config.Info must also be mirrored in
+      // apps/web/src/app/config.json/extras.ts in the cloud repo, otherwise
+      // $schema: https://app.kilo.ai/config.json will not recognize it.
+      remote_control: z
         .boolean()
         .optional()
         .describe("Enable remote control of sessions via Kilo Cloud. Equivalent to running /remote on startup."),
+      // kilocode_change end
       autoupdate: z
         .union([z.boolean(), z.literal("notify")])
         .optional()

@@ -3,6 +3,7 @@
  */
 
 import type { ProviderAuthAuthorization, ProviderAuthMethod } from "@kilocode/sdk/v2/client"
+import type { PartBatch, PartUpdate } from "../../../src/shared/stream-messages"
 
 // Connection states
 export type ConnectionState = "connecting" | "connected" | "disconnected" | "error"
@@ -125,6 +126,7 @@ export interface Message {
   summary?: { title?: string; body?: string; diffs?: unknown[] } | boolean
   cost?: number
   tokens?: TokenUsage
+  finish?: string
 }
 
 // File diff info (matches Snapshot.FileDiff from CLI backend)
@@ -523,13 +525,10 @@ export interface SendMessageFailedMessage {
   files?: FileAttachment[]
 }
 
-export interface PartUpdatedMessage {
-  type: "partUpdated"
-  sessionID?: string
-  messageID?: string
-  part: Part
-  delta?: PartDelta
-}
+// Wire shape lives in src/shared/stream-messages.ts; narrow `part` to the
+// webview's concrete union.
+export type PartUpdatedMessage = PartUpdate<Part>
+export type PartsUpdatedMessage = PartBatch<Part>
 
 export interface SessionStatusMessage {
   type: "sessionStatus"
@@ -590,10 +589,15 @@ export interface MessageRemovedMessage {
   messageID: string
 }
 
+export type MessageLoadMode = "replace" | "prepend" | "focus" | "reconcile"
+
 export interface MessagesLoadedMessage {
   type: "messagesLoaded"
   sessionID: string
   messages: Message[]
+  mode?: Exclude<MessageLoadMode, "focus">
+  cursor?: string
+  hasMore?: boolean
 }
 
 export interface MessageCreatedMessage {
@@ -750,9 +754,15 @@ export interface ChatCompletionResultMessage {
   requestId: string
 }
 
+export interface FileSearchItem {
+  path: string
+  type: "file" | "folder"
+}
+
 export interface FileSearchResultMessage {
   type: "fileSearchResult"
   paths: string[]
+  items?: FileSearchItem[]
   dir: string
   requestId: string
 }
@@ -819,6 +829,12 @@ export interface ConfigLoadedMessage {
 export interface ConfigUpdatedMessage {
   type: "configUpdated"
   config: Config
+}
+
+export interface ConfigUpdateFailedMessage {
+  type: "configUpdateFailed"
+  message: string
+  details?: string
 }
 
 export interface GlobalConfigLoadedMessage {
@@ -1392,6 +1408,13 @@ export interface DiffViewerLoadingMessage {
   loading: boolean
 }
 
+export interface DiffViewerRevertFileResultMessage {
+  type: "diffViewer.revertFileResult"
+  file: string
+  status: "success" | "error"
+  message: string
+}
+
 export interface ClearPendingPromptsMessage {
   type: "clearPendingPrompts"
 }
@@ -1496,6 +1519,7 @@ export type ExtensionMessage =
   | ErrorMessage
   | SendMessageFailedMessage
   | PartUpdatedMessage
+  | PartsUpdatedMessage
   | SessionStatusMessage
   | SessionErrorMessage
   | PermissionRequestMessage
@@ -1537,6 +1561,7 @@ export type ExtensionMessage =
   | ClaudeCompatSettingLoadedMessage
   | ConfigLoadedMessage
   | ConfigUpdatedMessage
+  | ConfigUpdateFailedMessage
   | GlobalConfigLoadedMessage
   | NotificationSettingsLoadedMessage
   | TimelineSettingLoadedMessage
@@ -1585,6 +1610,7 @@ export type ExtensionMessage =
   | ViewSubAgentSessionMessage
   | DiffViewerDiffsMessage
   | DiffViewerLoadingMessage
+  | DiffViewerRevertFileResultMessage
   | MarketplaceDataMessage
   | MarketplaceInstallResultMessage
   | MarketplaceRemoveResultMessage
@@ -1630,6 +1656,7 @@ export interface SendMessageRequest {
 export interface AbortRequest {
   type: "abort"
   sessionID: string
+  queuedMessageIDs?: string[]
 }
 
 export interface RevertSessionRequest {
@@ -1663,6 +1690,9 @@ export interface ClearSessionRequest {
 export interface LoadMessagesRequest {
   type: "loadMessages"
   sessionID: string
+  mode?: MessageLoadMode
+  before?: string
+  limit?: number
 }
 
 export interface LoadSessionsRequest {
@@ -1888,6 +1918,7 @@ export interface RequestFileSearchMessage {
   type: "requestFileSearch"
   query: string
   requestId: string
+  sessionID?: string
 }
 
 export interface RequestTerminalContextMessage {

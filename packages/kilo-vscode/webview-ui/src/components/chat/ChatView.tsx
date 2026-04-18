@@ -19,6 +19,7 @@ import { useVSCode } from "../../context/vscode"
 import { useLanguage } from "../../context/language"
 import { useWorktreeMode } from "../../context/worktree-mode"
 import { useServer } from "../../context/server"
+import { isPromptBlocked, isSuggesting, isQuestioning } from "./prompt-input-utils"
 
 interface ChatViewProps {
   onSelectSession?: (id: string) => void
@@ -62,9 +63,13 @@ export const ChatView: Component<ChatViewProps> = (props) => {
   const standaloneQuestions = createMemo(() => familyQuestions().filter((q) => !q.tool))
   const standaloneSuggestions = createMemo(() => familySuggestions().filter((s) => !s.tool))
   const permissionRequest = () => familyPermissions().find((p) => p.sessionID === id()) ?? familyPermissions()[0]
-  const blocked = () => familyPermissions().length > 0 || familyQuestions().some((q) => q.blocking !== false)
+  // Prompt input is decoupled from questions/suggestions — only permissions block.
+  // Pending questions and suggestions are auto-dismissed in sendMessage/sendCommand.
+  const blocked = () => isPromptBlocked(familyPermissions().length)
   // Session is busy only because a suggestion tool call is pending — prompt should behave as idle
-  const suggesting = () => !blocked() && familySuggestions().length > 0
+  const suggesting = () => isSuggesting(blocked(), familySuggestions().length)
+  // Session is busy only because a question tool call is pending — prompt should behave as idle
+  const questioning = () => isQuestioning(blocked(), familyQuestions().length)
   const dock = () => !props.readonly || !!permissionRequest()
 
   // When a bottom-dock permission disappears while the session is busy,
@@ -81,10 +86,9 @@ export const ChatView: Component<ChatViewProps> = (props) => {
   onMount(() => {
     if (props.readonly) return
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && session.status() === "busy" && !e.defaultPrevented) {
-        e.preventDefault()
-        session.abort()
-      }
+      if (e.key !== "Escape" || session.status() === "idle" || e.defaultPrevented) return
+      e.preventDefault()
+      session.abort()
     }
     document.addEventListener("keydown", handler)
     onCleanup(() => document.removeEventListener("keydown", handler))
@@ -222,6 +226,7 @@ export const ChatView: Component<ChatViewProps> = (props) => {
             <PromptInput
               blocked={blocked}
               suggesting={suggesting}
+              questioning={questioning}
               boxId={props.promptBoxId}
               pendingSessionID={props.pendingSessionID}
             />

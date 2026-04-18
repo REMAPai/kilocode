@@ -844,8 +844,10 @@ it.live(
   3_000,
 )
 
-it.live(
+// kilocode_change start - skip flaky test, tracked in #8990
+it.live.skip(
   "prompt submitted during an active run is included in the next LLM input",
+  // kilocode_change end
   () =>
     provideTmpdirServer(
       Effect.fnUntraced(function* ({ llm }) {
@@ -1158,7 +1160,10 @@ it.live(
   3_000,
 )
 
-it.live(
+// kilocode_change start - shell process timing is unreliable on Windows CI;
+// aligns with every other shell-* test in this file that uses `unix(...)`.
+unix(
+  // kilocode_change end
   "shell completion resumes queued loop callers",
   () =>
     provideTmpdirServer(

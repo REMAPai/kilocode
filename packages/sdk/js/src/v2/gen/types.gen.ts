@@ -475,40 +475,6 @@ export type EventTodoUpdated = {
   }
 }
 
-export type SessionStatus =
-  | {
-      type: "idle"
-    }
-  | {
-      type: "retry"
-      attempt: number
-      message: string
-      next: number
-    }
-  | {
-      type: "busy"
-    }
-  | {
-      type: "offline"
-      requestID: string
-      message: string
-    }
-
-export type EventSessionStatus = {
-  type: "session.status"
-  properties: {
-    sessionID: string
-    status: SessionStatus
-  }
-}
-
-export type EventSessionIdle = {
-  type: "session.idle"
-  properties: {
-    sessionID: string
-  }
-}
-
 export type SuggestionAction = {
   /**
    * Button or option label (1-5 words)
@@ -565,6 +531,40 @@ export type EventSuggestionDismissed = {
   properties: {
     sessionID: string
     requestID: string
+  }
+}
+
+export type SessionStatus =
+  | {
+      type: "idle"
+    }
+  | {
+      type: "retry"
+      attempt: number
+      message: string
+      next: number
+    }
+  | {
+      type: "busy"
+    }
+  | {
+      type: "offline"
+      requestID: string
+      message: string
+    }
+
+export type EventSessionStatus = {
+  type: "session.status"
+  properties: {
+    sessionID: string
+    status: SessionStatus
+  }
+}
+
+export type EventSessionIdle = {
+  type: "session.idle"
+  properties: {
+    sessionID: string
   }
 }
 
@@ -1145,11 +1145,11 @@ export type Event =
   | EventQuestionReplied
   | EventQuestionRejected
   | EventTodoUpdated
-  | EventSessionStatus
-  | EventSessionIdle
   | EventSuggestionShown
   | EventSuggestionAccepted
   | EventSuggestionDismissed
+  | EventSessionStatus
+  | EventSessionIdle
   | EventSessionCompacted
   | EventKiloSessionsRemoteStatusChanged
   | EventWorkspaceReady
@@ -6351,6 +6351,34 @@ export type KilocodeSessionImportPartResponses = {
 
 export type KilocodeSessionImportPartResponse =
   KilocodeSessionImportPartResponses[keyof KilocodeSessionImportPartResponses]
+
+export type KilocodeHeapSnapshotData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+    workspace?: string
+  }
+  url: "/kilocode/heap/snapshot"
+}
+
+export type KilocodeHeapSnapshotErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type KilocodeHeapSnapshotError = KilocodeHeapSnapshotErrors[keyof KilocodeHeapSnapshotErrors]
+
+export type KilocodeHeapSnapshotResponses = {
+  /**
+   * Heap snapshot file path
+   */
+  200: string
+}
+
+export type KilocodeHeapSnapshotResponse = KilocodeHeapSnapshotResponses[keyof KilocodeHeapSnapshotResponses]
 
 export type KilocodeRemoveSkillData = {
   body?: {
